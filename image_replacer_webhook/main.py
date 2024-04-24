@@ -12,7 +12,7 @@ import uvicorn
 from fastapi import Body, FastAPI
 from pydantic import BaseModel
 from setting import settings
-from utils import check_tls_cert_dir
+from utils import check_tls_cert_dir, image_add_prefix_cache, skip_registries_check
 
 
 class Response(BaseModel):
@@ -39,33 +39,6 @@ app = FastAPI()
 async def index():
     """index"""
     return {"message": "Hello, this is Image Replacer AdmissionWebhook!"}
-
-
-def normalize_image_name(image_name: str) -> str:
-    """
-    将一些短镜像名还原成完成的镜像名
-    redis => docker.io/library/redis
-    nginx/nginx => docker.io/nginx/nginx
-    quay.io/nginx/nginx => quay.io/nginx/nginx
-    """
-    slash_count = image_name.count("/")
-    name = image_name
-    if slash_count == 0:
-        name = f"docker.io/library/{image_name}"
-    elif slash_count == 1:
-        name = f"docker.io/{image_name}"
-
-    return name
-
-
-def image_add_prefix_cache(image_name: str, cache_registry: str) -> str:
-    """
-    使用前缀缓存镜像
-    """
-    image_name = normalize_image_name(image_name)
-    if image_name.startswith(cache_registry):
-        return image_name
-    return f"{cache_registry}/{image_name}"
 
 
 @app.post("/mutate")
@@ -95,16 +68,20 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
         origin_containers = copy.deepcopy(containers)
         for container in containers:
             original_image = container["image"]
+            if skip_registries_check(original_image, settings.skip_registries):
+                continue
             new_image = image_add_prefix_cache(original_image, settings.cache_registry)
-            if original_image != new_image:
-                container["image"] = new_image
-                logging.info(
-                    "req_uid=%s, container(%s) image %s replaced with %s",
-                    req_uid,
-                    container["name"],
-                    original_image,
-                    new_image,
-                )
+            if original_image == new_image:
+                continue
+            logging.info(
+                "req_uid=%s, container(%s) image %s replaced with %s",
+                req_uid,
+                container["name"],
+                original_image,
+                new_image,
+            )
+            container["image"] = new_image
+
         if containers == origin_containers:  # 如果容器没有变化，则直接返回
             logging.info("req_uid=%s, No changes to the pod spec were made.", req_uid)
             return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=True))
