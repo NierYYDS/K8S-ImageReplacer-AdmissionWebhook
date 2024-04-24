@@ -122,7 +122,7 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
         return AdmissionReviewResponse(response=resp)
     except KeyError:
         logging.exception(
-            "req_uid=%s, Failed to process the mutation request, the API server sent a request that did not have the required information.",
+            "req_uid=%s, the API server sent a request that did not have the required information.",
             req_uid,
         )
         return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=True))
