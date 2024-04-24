@@ -23,12 +23,14 @@ def normalize_image_name(image_name: str) -> str:
 
     return name
 
-def skip_registries_check(image_name:str, skip_registries: list) -> bool:
+
+def skip_registries_check(image_name: str, skip_registries: list) -> bool:
     """检查是否在忽略列表里面的镜像"""
     for registry in skip_registries:
         if image_name.startswith(registry):
             return True
     return False
+
 
 def image_add_prefix_cache(image_name: str, cache_registry: str) -> str:
     """
