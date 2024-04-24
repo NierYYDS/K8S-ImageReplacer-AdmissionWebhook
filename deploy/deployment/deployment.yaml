@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-replacer-deployment
+  labels:
+    app: image-replacer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-replacer
+  template:
+    metadata:
+      labels:
+        app: image-replacer
+    spec:
+      containers:
+      - name: image-replacer
+        image: CONTAINER_IMAGE
+        env:
+        - name: TLS_CERT_DIR
+          value: "/certs"
+        - name: IGNORE_CA_CERT
+          value: "true"
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: image-replacer-tls-secret
+          mountPath: "/certs"
+          readOnly: true        
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"           
+      volumes:
+      - name: image-replacer-tls-secret
+        secret:
+          secretName: image-replacer-tls-secret
