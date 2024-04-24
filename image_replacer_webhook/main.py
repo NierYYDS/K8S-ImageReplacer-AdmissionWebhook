@@ -70,7 +70,7 @@ def image_add_prefix_cache(image_name: str, cache_registry: str) -> str:
 
 @app.post("/mutate")
 async def mutate(req=Body(...)) -> AdmissionReviewResponse:
-    """Mutation of pod and add label foo=bar"""
+    """Mutate container image of pod"""
 
     req_uid = req["request"]["uid"]
 
@@ -120,9 +120,12 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
             patch=image_patch,
         )
         return AdmissionReviewResponse(response=resp)
-    except Exception:
-        logging.exception("req_uid=%s, Failed to process mutation request.", req_uid)
-        return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=False))
+    except KeyError:
+        logging.exception(
+            "req_uid=%s, Failed to process the mutation request, the API server sent a request that did not have the required information.",
+            req_uid,
+        )
+        return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=True))
 
 
 if __name__ == "__main__":
