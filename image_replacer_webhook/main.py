@@ -46,14 +46,16 @@ def normalize_image_name(image_name: str) -> str:
     将一些短镜像名还原成完成的镜像名
     redis => docker.io/library/redis
     nginx/nginx => docker.io/nginx/nginx
+    quay.io/nginx/nginx => quay.io/nginx/nginx
     """
     slash_count = image_name.count("/")
+    name = image_name
     if slash_count == 0:
-        return f"docker.io/library/{image_name}"
+        name = f"docker.io/library/{image_name}"
     elif slash_count == 1:
-        return f"docker.io/{image_name}"
-    else:
-        return image_name
+        name = f"docker.io/{image_name}"
+
+    return name
 
 
 def image_add_prefix_cache(image_name: str, cache_registry: str) -> str:
@@ -118,7 +120,7 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
             patch=image_patch,
         )
         return AdmissionReviewResponse(response=resp)
-    except:
+    except Exception:
         logging.exception("req_uid=%s, Failed to process mutation request.", req_uid)
         return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=False))
 
