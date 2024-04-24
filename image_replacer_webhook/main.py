@@ -11,8 +11,12 @@ from typing import Optional
 import uvicorn
 from fastapi import Body, FastAPI
 from pydantic import BaseModel
-from setting import settings
-from utils import check_tls_cert_dir, image_add_prefix_cache, skip_registries_check
+from image_replacer_webhook.setting import settings
+from image_replacer_webhook.utils import (
+    check_tls_cert_dir,
+    image_add_prefix_cache,
+    skip_registries_check,
+)
 
 
 class Response(BaseModel):

@@ -15,6 +15,7 @@ from image_replacer_webhook.utils import normalize_image_name, skip_registries_c
     ],
 )
 def test_normalize_image_name(name: str, result: str):
+    """test normalize_image_name"""
     assert normalize_image_name(name) == result
 
 
@@ -32,4 +33,5 @@ def test_normalize_image_name(name: str, result: str):
     ],
 )
 def test_skip_registries_check(name: str, skip_registries: list, result: bool):
+    """test skip_registries_check"""
     assert skip_registries_check(name, skip_registries) == result
