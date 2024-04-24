@@ -45,5 +45,5 @@ def image_add_prefix_cache(image_name: str, cache_registry: str) -> str:
 def check_tls_cert_dir(cert_dir: str) -> None:
     """check if tls cert diretory exist"""
     if not os.path.exists(cert_dir):
-        logging.error("TLS Cert directory %s does not exists.", dir)
+        logging.error("TLS Cert directory %s does not exists.", cert_dir)
         sys.exit(1)
