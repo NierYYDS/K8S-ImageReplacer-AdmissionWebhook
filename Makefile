@@ -1,7 +1,7 @@
 WEBHOOK_SERVICE?=image-replacer-service
 NAMESPACE?=default
 CONTAINER_REPO?=docker.io/nieryyds/image-replacer-webhook
-CONTAINER_VERSION?=0.1.2
+CONTAINER_VERSION?=0.1.3
 CONTAINER_IMAGE=$(CONTAINER_REPO):$(CONTAINER_VERSION)
 
 .PHONY: docker-build

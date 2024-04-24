@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: CONTAINER_IMAGE
   newName: docker.io/nieryyds/image-replacer-webhook
-  newTag: 0.1.2
+  newTag: 0.1.3
