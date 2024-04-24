@@ -2,18 +2,15 @@
 Author: NierYYDS
 """
 
-import os
 import copy
 import base64
 import json
 import logging
 from typing import Optional
-import uvicorn
 from fastapi import Body, FastAPI
 from pydantic import BaseModel
 from image_replacer_webhook.setting import settings
 from image_replacer_webhook.utils import (
-    check_tls_cert_dir,
     image_add_prefix_cache,
     skip_registries_check,
 )
@@ -107,24 +104,3 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
             req_uid,
         )
         return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=True))
-
-
-if __name__ == "__main__":
-    # 启动服务
-    logging.basicConfig(level=logging.INFO)
-    # 读取配置文件
-    logging.info("Reading configuration file..., %s", settings)
-    check_tls_cert_dir(settings.tls_cert_dir)
-    ssl_config = {
-        "ssl_keyfile": os.path.join(settings.tls_cert_dir, "tls.key"),
-        "ssl_certfile": os.path.join(settings.tls_cert_dir, "tls.crt"),
-    }
-    if not settings.ignore_ca_cert:
-        ssl_config["ssl_ca_certs"] = os.path.join(settings.tls_cert_dir, "ca.crt")
-
-    uvicorn.run(
-        app,
-        log_level="debug",
-        host="0.0.0.0",
-        **ssl_config,
-    )

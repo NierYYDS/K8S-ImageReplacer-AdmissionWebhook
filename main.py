@@ -1,8 +1,12 @@
+"""
+Author: NierYYDS
+"""
+
 import os
 import sys
 import logging
 import uvicorn
-from image_replacer_webhook.main import app
+from image_replacer_webhook.server import app
 from image_replacer_webhook.setting import settings
 
 
