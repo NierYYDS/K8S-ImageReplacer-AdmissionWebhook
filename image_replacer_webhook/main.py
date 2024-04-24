@@ -124,7 +124,6 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
 
 
 if __name__ == "__main__":
-
     # 启动服务
     logging.basicConfig(level=logging.INFO)
     # 读取配置文件
