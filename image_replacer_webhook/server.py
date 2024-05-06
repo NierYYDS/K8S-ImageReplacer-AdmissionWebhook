@@ -53,26 +53,21 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
         req_uid,
         json.dumps(req, indent=2),
     )
-    # 遍历pod的每个container
-    try:
-        # 提取请求中的 Pod 对象
-        req_obj = req["request"]["object"]
-        if req_obj["kind"] != "Pod":
-            logging.error(
-                "req_uid=%s, This webhook only supports pod mutation.", req_uid
-            )
-            return AdmissionReviewResponse(
-                response=Response(uid=req_uid, allowed=False)
-            )
-        # 遍历所有容器，修改镜像名称
-        containers = req_obj["spec"]["containers"]
-        origin_containers = copy.deepcopy(containers)
+
+    def replace_container_image(containers: list) -> list:
+        """Replace container image"""
         for container in containers:
             original_image = container["image"]
             if skip_registries_check(original_image, settings.skip_registries):
                 continue
             new_image = image_add_prefix_cache(original_image, settings.cache_registry)
             if original_image == new_image:
+                logging.info(
+                    "req_uid=%s, container(%s) image %s not replaced",
+                    req_uid,
+                    container["name"],
+                    original_image,
+                )
                 continue
             logging.info(
                 "req_uid=%s, container(%s) image %s replaced with %s",
@@ -83,12 +78,43 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
             )
             container["image"] = new_image
 
-        if containers == origin_containers:  # 如果容器没有变化，则直接返回
+    try:
+        # 提取请求中的 Pod 对象
+        req_obj = req["request"]["object"]
+        if req_obj["kind"] != "Pod":
+            logging.error(
+                "req_uid=%s, This webhook only supports pod mutation.", req_uid
+            )
+            return AdmissionReviewResponse(
+                response=Response(uid=req_uid, allowed=False)
+            )
+
+        # 遍历所有容器，修改镜像名称
+        containers = req_obj["spec"]["containers"]
+        origin_containers = copy.deepcopy(containers)
+        replace_container_image(containers)
+        # 遍历init容器
+        init_containers = req_obj["spec"].get("initContainers", [])
+        origin_init_containers = copy.deepcopy(init_containers)
+        replace_container_image(init_containers)
+        # 如果容器没有变化，则直接返回
+        if (
+            containers == origin_containers
+            and init_containers == origin_init_containers
+        ):
             logging.info("req_uid=%s, No changes to the pod spec were made.", req_uid)
             return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=True))
 
         # 构造patch
         patch = [{"op": "replace", "path": "/spec/containers", "value": containers}]
+        if init_containers:
+            patch.append(
+                {
+                    "op": "replace",
+                    "path": "/spec/initContainers",
+                    "value": init_containers,
+                }
+            )
         image_patch = base64.b64encode(json.dumps(patch).encode()).decode()
         logging.info("req_uid=%s, Patching pod with %s", req_uid, patch)
         resp = Response(
