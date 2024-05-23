@@ -6,8 +6,8 @@ import copy
 import base64
 import json
 import logging
-import jsonpatch
 from typing import Optional
+import jsonpatch
 from fastapi import Body, FastAPI
 from pydantic import BaseModel
 from image_replacer_webhook.setting import settings
