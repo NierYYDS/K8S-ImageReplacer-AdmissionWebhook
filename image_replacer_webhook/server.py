@@ -6,6 +6,7 @@ import copy
 import base64
 import json
 import logging
+import jsonpatch
 from typing import Optional
 from fastapi import Body, FastAPI
 from pydantic import BaseModel
@@ -89,39 +90,19 @@ async def mutate(req=Body(...)) -> AdmissionReviewResponse:
                 response=Response(uid=req_uid, allowed=False)
             )
 
+        new_obj = copy.deepcopy(req_obj)
         # 遍历所有容器，修改镜像名称
-        containers = req_obj["spec"]["containers"]
-        origin_containers = copy.deepcopy(containers)
-        replace_container_image(containers)
+        replace_container_image(new_obj["spec"]["containers"])
         # 遍历init容器
-        init_containers = req_obj["spec"].get("initContainers", [])
-        origin_init_containers = copy.deepcopy(init_containers)
-        replace_container_image(init_containers)
-        # 如果容器没有变化，则直接返回
-        if (
-            containers == origin_containers
-            and init_containers == origin_init_containers
-        ):
-            logging.info("req_uid=%s, No changes to the pod spec were made.", req_uid)
-            return AdmissionReviewResponse(response=Response(uid=req_uid, allowed=True))
+        replace_container_image(new_obj["spec"].get("initContainers", []))
 
-        # 构造patch
-        patch = [{"op": "replace", "path": "/spec/containers", "value": containers}]
-        if init_containers:
-            patch.append(
-                {
-                    "op": "replace",
-                    "path": "/spec/initContainers",
-                    "value": init_containers,
-                }
-            )
-        image_patch = base64.b64encode(json.dumps(patch).encode()).decode()
-        logging.info("req_uid=%s, Patching pod with %s", req_uid, patch)
+        image_patch = jsonpatch.make_patch(req_obj, new_obj)
+        logging.info("req_uid=%s, Patching pod with %s", req_uid, image_patch)
         resp = Response(
             uid=req_uid,
             allowed=True,
             patchType="JSONPatch",
-            patch=image_patch,
+            patch=base64.b64encode(str(image_patch).encode()).decode(),
         )
         return AdmissionReviewResponse(response=resp)
     except KeyError:
