@@ -32,5 +32,5 @@ def test_mutate_post(client):
     )
     for p in patch:
         assert p["op"] == "replace"
-        assert re.match(r"(/spec/(initContainers|containers)/(\d+)/image)", p["path"])
+        assert re.match(r"(/spec/(initContainers|containers)/(\d+)/image)", p["path"]) is not None
         assert p["value"].startswith("m.daocloud.io/docker.io/")
