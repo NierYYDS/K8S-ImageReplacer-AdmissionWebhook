@@ -2,6 +2,7 @@
 Author: NierYYDS
 """
 
+import re
 import json
 import base64
 import pytest
@@ -31,6 +32,5 @@ def test_mutate_post(client):
     )
     for p in patch:
         assert p["op"] == "replace"
-        assert p["path"] in ["/spec/containers", "/spec/initContainers"]
-        for c in p["value"]:
-            assert c["image"].startswith("m.daocloud.io/docker.io/")
+        assert re.match(r"(/spec/(initContainers|containers)/(\d+)/image)", p["path"]) is not None
+        assert p["value"].startswith("m.daocloud.io/docker.io/")
